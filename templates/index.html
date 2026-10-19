@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>StudentHub | Student Management</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+
+<body>
+
+<header class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <div class="brand-icon">🎓</div>
+
+        <div>
+            <h1>StudentHub</h1>
+            <p>Student Record Management</p>
+        </div>
+    </a>
+
+    <div class="header-actions">
+        <span class="internship-label">CodeNova Internship</span>
+
+        <button
+            id="theme-toggle"
+            class="theme-toggle"
+            type="button"
+            aria-label="Toggle dark mode"
+            title="Toggle dark mode"
+        >🌙</button>
+
+        <div class="avatar" title="Student administrator">A</div>
+    </div>
+</header>
+
+
+<div class="layout">
+
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-title">WORKSPACE</div>
+
+        <a href="{{ url_for('index') }}" class="nav-item active">
+            <span>▦</span> Dashboard
+        </a>
+
+        <a href="#student-form" class="nav-item">
+            <span>＋</span> Add Student
+        </a>
+
+        <a href="#student-records" class="nav-item">
+            <span>☷</span> Student Records
+        </a>
+
+        <a href="#search-box" class="nav-item">
+            <span>⌕</span> Search Students
+        </a>
+
+        <a href="#analytics" class="nav-item">
+            <span>▥</span> GPA Analytics
+        </a>
+
+        <div class="sidebar-footer">
+            <div class="footer-icon">✦</div>
+            <p>Learn. Build. Grow.</p>
+            <small>Powered by Python & Flask</small>
+        </div>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <div class="mobile-toolbar">
+            <button id="menu-toggle" type="button" class="menu-toggle">
+                ☰ Menu
+            </button>
+        </div>
+
+
+        <section class="welcome-banner">
+            <div>
+                <span class="eyebrow">STUDENT MANAGEMENT PLATFORM</span>
+
+                <h2>Welcome to your dashboard 👋</h2>
+
+                <p>
+                    Track student performance, manage records,
+                    and keep everything organized.
+                </p>
+            </div>
+
+            <a href="#student-form" class="welcome-button">
+                + Add Student
+            </a>
+
+            <div class="banner-orb orb-one"></div>
+            <div class="banner-orb orb-two"></div>
+        </section>
+
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">
+                            <span>
+                                {{ "✓" if category == "success" else "!" }}
+                            </span>
+
+                            {{ message }}
+
+                            <button
+                                type="button"
+                                class="flash-close"
+                                aria-label="Dismiss notification"
+                            >×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+
+        <section class="stats-grid">
+
+            <article class="stat-card blue">
+                <div class="stat-top">
+                    <span>Total Students</span>
+                    <div class="stat-icon">👥</div>
+                </div>
+
+                <h3>{{ total_students }}</h3>
+                <p class="stat-description">Registered student records</p>
+
+                <div class="stat-decoration"></div>
+            </article>
+
+
+            <article class="stat-card green">
+                <div class="stat-top">
+                    <span>Average GPA</span>
+                    <div class="stat-icon">🎓</div>
+                </div>
+
+                <h3>{{ "%.2f"|format(average_gpa) }}</h3>
+                <p class="stat-description">Overall student average</p>
+
+                <div class="stat-decoration"></div>
+            </article>
+
+
+            <article class="stat-card purple">
+                <div class="stat-top">
+                    <span>Highest GPA</span>
+                    <div class="stat-icon">★</div>
+                </div>
+
+                <h3>{{ "%.2f"|format(highest_gpa) }}</h3>
+                <p class="stat-description">Highest recorded GPA</p>
+
+                <div class="stat-decoration"></div>
+            </article>
+
+
+            <article class="stat-card orange">
+                <div class="stat-top">
+                    <span>Lowest GPA</span>
+                    <div class="stat-icon">↘</div>
+                </div>
+
+                <h3>{{ "%.2f"|format(lowest_gpa) }}</h3>
+                <p class="stat-description">Lowest recorded GPA</p>
+
+                <div class="stat-decoration"></div>
+            </article>
+
+        </section>
+
+
+        <section class="content-grid">
+
+            <div class="panel records-panel" id="student-records">
+
+                <div class="panel-heading">
+                    <div>
+                        <span class="section-kicker">YOUR DATABASE</span>
+                        <h2>Student Records</h2>
+                        <p>View and manage all student information.</p>
+                    </div>
+
+                    <span class="record-count">
+                        {{ students|length }} shown
+                    </span>
+                </div>
+
+
+                <form
+                    action="{{ url_for('index') }}"
+                    method="GET"
+                    class="search-form"
+                    id="search-box"
+                >
+                    <span class="search-icon">⌕</span>
+
+                    <input
+                        type="search"
+                        name="search"
+                        placeholder="Search name, roll number, or email..."
+                        value="{{ search_query }}"
+                        aria-label="Search student records"
+                    >
+
+                    <button type="submit" class="primary-button">
+                        Search
+                    </button>
+
+                    {% if search_query %}
+                        <a href="{{ url_for('index') }}" class="clear-button">
+                            Clear
+                        </a>
+                    {% endif %}
+                </form>
+
+
+                <div class="table-wrapper">
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Student</th>
+                                <th>Roll Number</th>
+                                <th>Email</th>
+                                <th>GPA</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for student in students %}
+
+                            <tr>
+                                <td class="id-cell">
+                                    #{{ student['id'] }}
+                                </td>
+
+                                <td>
+                                    <div class="student-cell">
+                                        <div class="student-avatar">
+                                            {{ student['name'][0]|upper }}
+                                        </div>
+
+                                        <span>{{ student['name'] }}</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="roll-badge">
+                                        {{ student['roll_number'] }}
+                                    </span>
+                                </td>
+
+                                <td class="email-cell">
+                                    {{ student['email'] }}
+                                </td>
+
+                                <td>
+                                    <span class="gpa-badge">
+                                        {{ "%.2f"|format(student['gpa']) }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="action-buttons">
+
+                                        <a
+                                            href="{{ url_for('index', edit=student['id']) }}#student-form"
+                                            class="edit-button"
+                                            title="Edit student"
+                                        >✎</a>
+
+                                        <form
+                                            action="{{ url_for('delete', student_id=student['id']) }}"
+                                            method="POST"
+                                            class="delete-form"
+                                            data-student-name="{{ student['name'] }}"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="delete-button"
+                                                title="Delete student"
+                                            >⌫</button>
+                                        </form>
+
+                                    </div>
+                                </td>
+                            </tr>
+
+                            {% else %}
+
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <div>📂</div>
+                                    <h3>No students found</h3>
+                                    <p>Try another search or add a student.</p>
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+                    </table>
+
+                </div>
+
+                <div class="table-footer">
+                    <span>
+                        Showing {{ students|length }} record(s)
+                    </span>
+
+                    <span>Data stored securely in SQLite</span>
+                </div>
+
+            </div>
+
+
+            <div class="panel form-panel" id="student-form">
+
+                {% if editing_student %}
+
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">EDIT DETAILS</span>
+                            <h2>Update Student</h2>
+                            <p>Modify the selected record.</p>
+                        </div>
+
+                        <div class="form-icon">✎</div>
+                    </div>
+
+                    <form
+                        action="{{ url_for('update', student_id=editing_student['id']) }}"
+                        method="POST"
+                        class="student-form"
+                    >
+
+                        <label for="edit-roll">Roll Number</label>
+
+                        <input
+                            id="edit-roll"
+                            type="text"
+                            value="{{ editing_student['roll_number'] }}"
+                            disabled
+                        >
+
+                        <label for="edit-name">Full Name *</label>
+
+                        <input
+                            id="edit-name"
+                            type="text"
+                            name="name"
+                            value="{{ editing_student['name'] }}"
+                            required
+                            maxlength="100"
+                        >
+
+                        <label for="edit-email">Email Address *</label>
+
+                        <input
+                            id="edit-email"
+                            type="email"
+                            name="email"
+                            value="{{ editing_student['email'] }}"
+                            required
+                            maxlength="254"
+                        >
+
+                        <label for="edit-gpa">GPA (0–10) *</label>
+
+                        <input
+                            id="edit-gpa"
+                            type="number"
+                            name="gpa"
+                            min="0"
+                            max="10"
+                            step="0.01"
+                            value="{{ editing_student['gpa'] }}"
+                            required
+                        >
+
+                        <button type="submit" class="submit-button">
+                            Save Changes →
+                        </button>
+
+                        <a href="{{ url_for('index') }}" class="cancel-button">
+                            Cancel
+                        </a>
+
+                    </form>
+
+                {% else %}
+
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">NEW ENTRY</span>
+                            <h2>Add New Student</h2>
+                            <p>Fill in the student's details.</p>
+                        </div>
+
+                        <div class="form-icon">＋</div>
+                    </div>
+
+                    <form
+                        action="{{ url_for('add') }}"
+                        method="POST"
+                        class="student-form"
+                        id="add-form"
+                    >
+
+                        <label for="roll-number">Roll Number *</label>
+
+                        <input
+                            id="roll-number"
+                            type="text"
+                            name="roll_number"
+                            placeholder="e.g. 104"
+                            required
+                            maxlength="30"
+                        >
+
+                        <label for="name">Full Name *</label>
+
+                        <input
+                            id="name"
+                            type="text"
+                            name="name"
+                            placeholder="Enter full name"
+                            required
+                            maxlength="100"
+                        >
+
+                        <label for="email">Email Address *</label>
+
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            placeholder="student@example.com"
+                            required
+                            maxlength="254"
+                        >
+
+                        <label for="gpa">GPA (0–10) *</label>
+
+                        <input
+                            id="gpa"
+                            type="number"
+                            name="gpa"
+                            placeholder="Enter GPA"
+                            min="0"
+                            max="10"
+                            step="0.01"
+                            required
+                        >
+
+                        <button type="submit" class="submit-button">
+                            + Add Student
+                        </button>
+
+                    </form>
+
+                {% endif %}
+
+
+                <div class="info-box">
+                    <span class="info-icon">ⓘ</span>
+
+                    <div>
+                        <strong>Validation rules</strong>
+
+                        <p>
+                            Roll number and email must be unique.
+                            GPA must be between 0 and 10.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="panel analytics-panel" id="analytics">
+
+            <div class="panel-heading">
+                <div>
+                    <span class="section-kicker">PERFORMANCE OVERVIEW</span>
+                    <h2>GPA Analytics</h2>
+                    <p>Distribution of student records by GPA range.</p>
+                </div>
+                <div class="analytics-badges" aria-label="Chart details">
+                    <span class="analytics-badge">{{ total_students }} students</span>
+                    <span class="analytics-badge">GPA scale 0–10</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas
+                    id="gpaChart"
+                    data-labels='{{ chart_labels | tojson }}'
+                    data-values='{{ chart_values | tojson }}'
+                    role="img"
+                    aria-label="Bar chart showing how many students fall into each GPA range"
+                ></canvas>
+                <div id="chart-empty" class="chart-empty" hidden>
+                    Add student records to view GPA analytics.
+                </div>
+            </div>
+            <p id="chart-insight" class="chart-insight" aria-live="polite"></p>
+
+        </section>
+
+
+        <footer class="page-footer">
+            <div class="footer-brand">🎓 StudentHub</div>
+
+            <p>Built with Python, Flask, SQLite, HTML, CSS and JavaScript.</p>
+
+            <span>CodeNova Python Programming Internship Project</span>
+        </footer>
+
+    </main>
+
+</div>
+
+
+<!-- Delete confirmation modal -->
+
+<div class="modal-overlay" id="delete-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true"
+         aria-labelledby="modal-title">
+
+        <div class="modal-icon">!</div>
+
+        <h2 id="modal-title">Delete student?</h2>
+
+        <p id="modal-message">
+            This action cannot be undone.
+        </p>
+
+        <div class="modal-actions">
+            <button type="button" id="cancel-delete" class="cancel-button">
+                Cancel
+            </button>
+
+            <button type="button" id="confirm-delete" class="modal-delete">
+                Yes, delete
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Loading overlay -->
+
+<div class="loading-overlay" id="loading-overlay" hidden>
+    <div class="loading-card">
+        <div class="spinner"></div>
+        <p>Updating student records...</p>
+    </div>
+</div>
+
+
+</body>
+</html>
